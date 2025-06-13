@@ -1,71 +1,37 @@
-// check_expired.js
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Tìm bảng thứ hai (bảng chứng thư số)
+    var tables = document.querySelectorAll("table");
+    if(tables.length < 2) return;
+    var table = tables[1]; // Bảng thứ 2
 
-// Hàm chuyển đổi định dạng ngày dd/mm/yyyy hoặc dd.mm.yyyy sang đối tượng Date
-function parseDate(str) {
-    if (!str) return null;
-    str = str.trim().replace(/-/g, '/').replace(/\./g, '/');
-    let parts = str.split('/');
-    if (parts.length === 3) {
-        let day = parseInt(parts[0], 10);
-        let month = parseInt(parts[1], 10) - 1; // tháng bắt đầu từ 0
-        let year = parseInt(parts[2], 10);
-        return new Date(year, month, day);
+    // Lấy các dòng (tr) trong tbody, bỏ qua dòng đầu là tiêu đề
+    var rows = table.querySelectorAll("tbody tr");
+    for(let i = 1; i < rows.length; i++) {
+        var tds = rows[i].querySelectorAll("td");
+        // Nếu thiếu ô "Trạng thái" thì thêm vào
+        if(tds.length === 3) {
+            var trangThaiTd = document.createElement("td");
+            trangThaiTd.style = tds[0].getAttribute("style");
+            tds[2].after(trangThaiTd);
+            tds = rows[i].querySelectorAll("td");
+        }
+        // Lấy ngày hết hạn (ô thứ 3)
+        var ngayHetHan = tds[2].textContent.trim();
+        // Chuyển định dạng dd.mm.yyyy hoặc dd/mm/yyyy sang yyyy-mm-dd
+        var parts = ngayHetHan.split(/[./]/);
+        if(parts.length === 3) {
+            var formatted = parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+            var dateHetHan = new Date(formatted);
+            var now = new Date();
+            // Đặt thời gian so sánh đến hết ngày
+            dateHetHan.setHours(23,59,59,999);
+            if(now > dateHetHan) {
+                tds[3].textContent = "Hết hạn";
+                tds[3].style.color = "#ed3338";
+                tds[3].style.fontWeight = "bold";
+            }
+        }
     }
-    return null;
-}
-
-function checkExpired() {
-    var today = new Date();
-
-    // Lặp qua tất cả các bảng trong trang
-    document.querySelectorAll('table').forEach(function(table) {
-        let headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim().toLowerCase());
-        
-        // Kiểm tra bảng 1
-        let idxThoiHan = headers.indexOf('thời hạn');
-        let idxTrangThai = headers.indexOf('trạng thái');
-        if (idxThoiHan !== -1 && idxTrangThai !== -1) {
-            table.querySelectorAll('tbody tr').forEach(function(row) {
-                let cells = row.querySelectorAll('td');
-                if (cells.length === headers.length) {
-                    let thoiHanText = cells[idxThoiHan].textContent.trim();
-                    let date = parseDate(thoiHanText);
-                    if (!date) return;
-                    if (date < today) {
-                        let trangThaiCell = cells[idxTrangThai];
-                        if (!trangThaiCell.textContent.trim()) {
-                            trangThaiCell.textContent = "Hết hạn";
-                            trangThaiCell.style.color = "#ed3338";
-                            trangThaiCell.style.fontWeight = "bold";
-                        }
-                    }
-                }
-            });
-        }
-
-        // Kiểm tra bảng 2
-        let idxNgayHetHan = headers.indexOf('ngày hết hạn');
-        let idxTrangThai2 = headers.indexOf('trạng thái');
-        if (idxNgayHetHan !== -1 && idxTrangThai2 !== -1) {
-            table.querySelectorAll('tbody tr').forEach(function(row) {
-                let cells = row.querySelectorAll('td');
-                if (cells.length === headers.length) {
-                    let ngayHetHanText = cells[idxNgayHetHan].textContent.trim();
-                    let date = parseDate(ngayHetHanText);
-                    if (!date) return;
-                    if (date < today) {
-                        let trangThaiCell = cells[idxTrangThai2];
-                        if (!trangThaiCell.textContent.trim()) {
-                            trangThaiCell.textContent = "Hết hạn";
-                            trangThaiCell.style.color = "#ed3338";
-                            trangThaiCell.style.fontWeight = "bold";
-                        }
-                    }
-                }
-            });
-        }
-    });
-}
-
-// Chạy script sau khi trang đã tải xong
-window.addEventListener('DOMContentLoaded', checkExpired);
+});
+</script>
